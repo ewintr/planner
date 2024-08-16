@@ -1,7 +1,8 @@
 package main
 
-import "fmt"
+import "os"
 
 func main() {
-	fmt.Println("hoi")
+	td := NewTodoist(os.Getenv("TODOIS_API_TOKEN"))
+	td.Run()
 }
