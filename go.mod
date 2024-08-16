@@ -1,3 +1,3 @@
-module code.ewintr.nl/hatd-planner
+module code.ewintr.nl/planner
 
 go 1.21.5
