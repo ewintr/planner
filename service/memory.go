@@ -16,6 +16,15 @@ func (m *Memory) StoreProject(project Project) error {
 	return nil
 }
 
+func (m *Memory) RemoveProject(id string) error {
+	if _, ok := m.projects[id]; !ok {
+		return ErrNotFound
+	}
+	delete(m.projects, id)
+
+	return nil
+}
+
 func (m *Memory) FindProject(id string) (Project, error) {
 	project, ok := m.projects[id]
 	if !ok {
