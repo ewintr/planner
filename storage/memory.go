@@ -1,16 +1,18 @@
-package service
+package storage
+
+import "code.ewintr.nl/planner/planner"
 
 type Memory struct {
-	projects map[string]Project
+	projects map[string]planner.Task
 }
 
 func NewMemory() *Memory {
 	return &Memory{
-		projects: make(map[string]Project),
+		projects: make(map[string]planner.Task),
 	}
 }
 
-func (m *Memory) StoreProject(project Project) error {
+func (m *Memory) StoreProject(project planner.Task) error {
 	m.projects[project.ID] = project
 
 	return nil
