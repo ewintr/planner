@@ -3,32 +3,33 @@ package storage
 import "code.ewintr.nl/planner/planner"
 
 type Memory struct {
-	projects map[string]planner.Task
+	items map[string]planner.Syncable
 }
 
 func NewMemory() *Memory {
 	return &Memory{
-		projects: make(map[string]planner.Task),
+		items: make(map[string]planner.Syncable),
 	}
 }
 
-func (m *Memory) StoreProject(project planner.Task) error {
-	m.projects[project.ID] = project
+func (m *Memory) StoreProject(item planner.Syncable) error {
+	m.items[item.ID()] = item
 
 	return nil
 }
 
+/*
 func (m *Memory) RemoveProject(id string) error {
-	if _, ok := m.projects[id]; !ok {
+	if _, ok := m.items[id]; !ok {
 		return ErrNotFound
 	}
-	delete(m.projects, id)
+	delete(m.items, id)
 
 	return nil
 }
 
 func (m *Memory) FindProject(id string) (Project, error) {
-	project, ok := m.projects[id]
+	project, ok := m.items[id]
 	if !ok {
 		return Project{}, ErrNotFound
 	}
@@ -36,9 +37,10 @@ func (m *Memory) FindProject(id string) (Project, error) {
 }
 
 func (m *Memory) FindAllProjects() ([]Project, error) {
-	projects := make([]Project, 0, len(m.projects))
-	for _, p := range m.projects {
-		projects = append(projects, p)
+	items := make([]Project, 0, len(m.items))
+	for _, p := range m.items {
+		items = append(items, p)
 	}
-	return projects, nil
+	return items, nil
 }
+*/
