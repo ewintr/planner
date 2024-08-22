@@ -13,5 +13,5 @@ func main() {
 	http.HandleFunc("/", handler.Index)
 	http.HandleFunc("/sync", handler.NewSyncHandler(mem))
 
-	http.ListenAndServer(":8092", nil)
+	http.ListenAndServe(":8092", nil)
 }

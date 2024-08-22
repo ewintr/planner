@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"code.ewintr.nl/planner/storage"
 )
@@ -14,8 +15,17 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 func NewSyncHandler(mem storage.Repository) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token := r.URL.Query().Get("token")
-		items, err := mem.NewSince(token)
+		timestamp := time.Time{}
+		tsStr := r.URL.Query().Get("ts")
+		if tsStr != "" {
+			var err error
+			if timestamp, err = time.Parse(time.RFC3339, tsStr); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+
+		items, err := mem.NewSince(timestamp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -27,7 +37,7 @@ func NewSyncHandler(mem storage.Repository) func(w http.ResponseWriter, r *http.
 			return
 		}
 
-		fmt.Fprint(w, body)
+		fmt.Fprint(w, string(body))
 	}
 
 }

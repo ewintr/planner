@@ -1,6 +1,10 @@
 package storage
 
-import "code.ewintr.nl/planner/planner"
+import (
+	"time"
+
+	"code.ewintr.nl/planner/planner"
+)
 
 type Memory struct {
 	items map[string]planner.Syncable
@@ -12,7 +16,19 @@ func NewMemory() *Memory {
 	}
 }
 
-func (m *Memory) StoreProject(item planner.Syncable) error {
+func (m *Memory) NewSince(timestamp time.Time) ([]planner.Syncable, error) {
+	result := make([]planner.Syncable, 0)
+
+	for _, i := range m.items {
+		if timestamp.IsZero() || i.Updated().After(timestamp) {
+			result = append(result, i)
+		}
+	}
+
+	return result, nil
+}
+
+func (m *Memory) Store(item planner.Syncable) error {
 	m.items[item.ID()] = item
 
 	return nil
