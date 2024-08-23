@@ -25,10 +25,10 @@ func NewTask(description string) Task {
 	}
 }
 
-func (t *Task) ID() string {
+func (t Task) ID() string {
 	return t.id
 }
 
-func (t *Task) Updated() time.Time {
+func (t Task) Updated() time.Time {
 	return t.updated
 }

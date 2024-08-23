@@ -2,69 +2,87 @@ package storage_test
 
 import (
 	"testing"
+	"time"
 
-	"code.ewintr.nl/planner/service"
-	"github.com/google/go-cmp/cmp"
+	"code.ewintr.nl/planner/planner"
+	"code.ewintr.nl/planner/storage"
 )
 
-func TestMemoryProjects(t *testing.T) {
+func TestMemoryItem(t *testing.T) {
 	t.Parallel()
 
-	mem := service.NewMemory()
+	mem := storage.NewMemory()
 
 	t.Log("start empty")
-	actProjects, actErr := mem.FindAllProjects()
+	actItems, actErr := mem.NewSince(time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	if len(actProjects) != 0 {
-		t.Errorf("exp 0, got %d", len(actProjects))
+	if len(actItems) != 0 {
+		t.Errorf("exp 0, got %d", len(actItems))
 	}
 
 	t.Log("add one")
-	p1 := service.Project{
-		ID:   "p1",
-		Name: "project 1",
-	}
-	p2 := service.Project{
-		ID:   "p2",
-		Name: "project 2",
-	}
-	if actErr := mem.StoreProject(p1); actErr != nil {
+	t1 := planner.NewTask("test")
+	if actErr := mem.Store(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actProjects, actErr = mem.FindAllProjects()
+	actItems, actErr = mem.NewSince(time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	expProjects := []service.Project{p1}
-	if diff := cmp.Diff(expProjects, actProjects); diff != "" {
-		t.Errorf("(-exp, +got):\n%s", diff)
+	if len(actItems) != 1 {
+		t.Errorf("exp 1, gor %d", len(actItems))
 	}
+	if actItems[0].ID() != t1.ID() {
+		t.Errorf("exp %v, got %v", actItems[0].ID(), t1.ID())
+	}
+
+	before := time.Now()
 
 	t.Log("add second")
-	if actErr := mem.StoreProject(p2); actErr != nil {
+	t2 := planner.NewTask("test 2")
+	if actErr := mem.Store(t2); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actProjects, actErr = mem.FindAllProjects()
+	actItems, actErr = mem.NewSince(time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	expProjects = []service.Project{p1, p2}
-	if diff := cmp.Diff(expProjects, actProjects); diff != "" {
-		t.Errorf("(-exp, +act):\n%s", diff)
+	if len(actItems) != 2 {
+		t.Errorf("exp 2, gor %d", len(actItems))
+	}
+	if actItems[0].ID() != t1.ID() {
+		t.Errorf("exp %v, got %v", actItems[0].ID(), t1.ID())
+	}
+	if actItems[1].ID() != t2.ID() {
+		t.Errorf("exp %v, got %v", actItems[1].ID(), t2.ID())
 	}
 
-	t.Log("remove first")
-	if actErr := mem.RemoveProject(p1.ID); actErr != nil {
-		t.Errorf("exp nil, got %v", actErr)
-	}
-	actProjects, actErr = mem.FindAllProjects()
+	actItems, actErr = mem.NewSince(before)
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	expProjects = []service.Project{p2}
-	if diff := cmp.Diff(expProjects, actProjects); diff != "" {
-		t.Errorf("-exp, +act:\b%s", diff)
+	if len(actItems) != 1 {
+		t.Errorf("exp 1, gor %d", len(actItems))
 	}
+	if actItems[0].ID() != t2.ID() {
+		t.Errorf("exp %v, got %v", actItems[0].ID(), t2.ID())
+	}
+
+	/*
+			t.Log("remove first")
+			if actErr := mem.RemoveProject(p1.ID); actErr != nil {
+				t.Errorf("exp nil, got %v", actErr)
+			}
+			actItems , actErr = mem.FindAllItems ()
+			if actErr != nil {
+				t.Errorf("exp nil, got %v", actErr)
+			}
+			expItems = []service.Project{p2}
+			if diff := cmp.Diff(expItems
+		  , actItems ); diff != "" {
+				t.Errorf("-exp, +act:\b%s", diff)
+			}
+	*/
 }
