@@ -14,7 +14,7 @@ func TestMemoryItem(t *testing.T) {
 	mem := storage.NewMemory()
 
 	t.Log("start empty")
-	actItems, actErr := mem.NewSince(time.Time{})
+	actItems, actErr := mem.Updated(time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -24,10 +24,10 @@ func TestMemoryItem(t *testing.T) {
 
 	t.Log("add one")
 	t1 := planner.NewTask("test")
-	if actErr := mem.Store(t1); actErr != nil {
+	if actErr := mem.Update(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actItems, actErr = mem.NewSince(time.Time{})
+	actItems, actErr = mem.Updated(time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -42,10 +42,10 @@ func TestMemoryItem(t *testing.T) {
 
 	t.Log("add second")
 	t2 := planner.NewTask("test 2")
-	if actErr := mem.Store(t2); actErr != nil {
+	if actErr := mem.Update(t2); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actItems, actErr = mem.NewSince(time.Time{})
+	actItems, actErr = mem.Updated(time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -59,7 +59,7 @@ func TestMemoryItem(t *testing.T) {
 		t.Errorf("exp %v, got %v", actItems[1].ID(), t2.ID())
 	}
 
-	actItems, actErr = mem.NewSince(before)
+	actItems, actErr = mem.Updated(before)
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}

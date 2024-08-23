@@ -6,21 +6,34 @@ import (
 	"code.ewintr.nl/planner/planner"
 )
 
+type deletedItem struct {
+	ID        string
+	Timestamp time.Time
+}
+
 type Memory struct {
-	items map[string]planner.Syncable
+	items   map[string]planner.Syncable
+	deleted []deletedItem
 }
 
 func NewMemory() *Memory {
 	return &Memory{
-		items: make(map[string]planner.Syncable),
+		items:   make(map[string]planner.Syncable),
+		deleted: make([]deletedItem, 0),
 	}
 }
 
-func (m *Memory) NewSince(timestamp time.Time) ([]planner.Syncable, error) {
+func (m *Memory) Update(item planner.Syncable) error {
+	m.items[item.ID()] = item
+
+	return nil
+}
+
+func (m *Memory) Updated(timestamp time.Time) ([]planner.Syncable, error) {
 	result := make([]planner.Syncable, 0)
 
 	for _, i := range m.items {
-		if timestamp.IsZero() || i.Updated().After(timestamp) {
+		if timestamp.IsZero() || i.Updated().Equal(timestamp) || i.Updated().After(timestamp) {
 			result = append(result, i)
 		}
 	}
@@ -28,35 +41,26 @@ func (m *Memory) NewSince(timestamp time.Time) ([]planner.Syncable, error) {
 	return result, nil
 }
 
-func (m *Memory) Store(item planner.Syncable) error {
-	m.items[item.ID()] = item
-
-	return nil
-}
-
-/*
-func (m *Memory) RemoveProject(id string) error {
-	if _, ok := m.items[id]; !ok {
+func (m *Memory) Delete(id string) error {
+	if _, exists := m.items[id]; !exists {
 		return ErrNotFound
 	}
+
 	delete(m.items, id)
+	m.deleted = append(m.deleted, deletedItem{
+		ID:        id,
+		Timestamp: time.Now(),
+	})
 
 	return nil
 }
 
-func (m *Memory) FindProject(id string) (Project, error) {
-	project, ok := m.items[id]
-	if !ok {
-		return Project{}, ErrNotFound
+func (m *Memory) Deleted(t time.Time) ([]string, error) {
+	result := make([]string, 0)
+	for _, di := range m.deleted {
+		if di.Timestamp.Equal(t) || di.Timestamp.After(t) {
+			result = append(result, di.ID)
+		}
 	}
-	return project, nil
+	return result, nil
 }
-
-func (m *Memory) FindAllProjects() ([]Project, error) {
-	items := make([]Project, 0, len(m.items))
-	for _, p := range m.items {
-		items = append(items, p)
-	}
-	return items, nil
-}
-*/

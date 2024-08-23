@@ -11,10 +11,9 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
-type Repository interface {
-	NewSince(t time.Time) ([]planner.Syncable, error)
-	Store(item planner.Syncable) error
-	// FindTask(id string) (planner.Task, error)
-	// FindAllTasks() ([]planner.Task, error)
-	// StoreTask(project planner.Task) error
+type Syncer interface {
+	Update(item planner.Syncable) error
+	Updated(t time.Time) ([]planner.Syncable, error)
+	Delete(id string) error
+	Deleted(t time.Time) ([]string, error)
 }

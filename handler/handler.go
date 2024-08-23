@@ -13,7 +13,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"status":"ok"}`)
 }
 
-func NewSyncHandler(mem storage.Repository) func(w http.ResponseWriter, r *http.Request) {
+func NewSyncHandler(mem storage.Syncer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		timestamp := time.Time{}
 		tsStr := r.URL.Query().Get("ts")
@@ -25,7 +25,7 @@ func NewSyncHandler(mem storage.Repository) func(w http.ResponseWriter, r *http.
 			}
 		}
 
-		items, err := mem.NewSince(timestamp)
+		items, err := mem.Updated(timestamp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -39,5 +39,10 @@ func NewSyncHandler(mem storage.Repository) func(w http.ResponseWriter, r *http.
 
 		fmt.Fprint(w, string(body))
 	}
+}
 
+func NewStoreHandler(mem storage.Syncer) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+	}
 }
