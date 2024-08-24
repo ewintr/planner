@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -58,6 +59,13 @@ func TestMemoryItem(t *testing.T) {
 	if actItems[1].ID() != t2.ID() {
 		t.Errorf("exp %v, got %v", actItems[1].ID(), t2.ID())
 	}
+	actDeleted, actErr := mem.Deleted(time.Time{})
+	if actErr != nil {
+		t.Errorf("exp nil, got %v", actErr)
+	}
+	if len(actDeleted) != 0 {
+		t.Errorf("exp 0, got %d", len(actDeleted))
+	}
 
 	actItems, actErr = mem.Updated(before)
 	if actErr != nil {
@@ -70,19 +78,40 @@ func TestMemoryItem(t *testing.T) {
 		t.Errorf("exp %v, got %v", actItems[0].ID(), t2.ID())
 	}
 
-	/*
-			t.Log("remove first")
-			if actErr := mem.RemoveProject(p1.ID); actErr != nil {
-				t.Errorf("exp nil, got %v", actErr)
-			}
-			actItems , actErr = mem.FindAllItems ()
-			if actErr != nil {
-				t.Errorf("exp nil, got %v", actErr)
-			}
-			expItems = []service.Project{p2}
-			if diff := cmp.Diff(expItems
-		  , actItems ); diff != "" {
-				t.Errorf("-exp, +act:\b%s", diff)
-			}
-	*/
+	t.Log("remove first")
+	if actErr := mem.Delete(t1.ID()); actErr != nil {
+		t.Errorf("exp nil, got %v", actErr)
+	}
+	actItems, actErr = mem.Updated(time.Time{})
+	if actErr != nil {
+		t.Errorf("exp nil, got %v", actErr)
+	}
+	if len(actItems) != 1 {
+		t.Errorf("exp 2, gor %d", len(actItems))
+	}
+	if actItems[0].ID() != t2.ID() {
+		t.Errorf("exp %v, got %v", actItems[0].ID(), t1.ID())
+	}
+	actDeleted, actErr = mem.Deleted(time.Time{})
+	if actErr != nil {
+		t.Errorf("exp nil, got %v", actErr)
+	}
+	if len(actDeleted) != 1 {
+		t.Errorf("exp 1, got %d", len(actDeleted))
+	}
+	if actDeleted[0] != t1.ID() {
+		t.Errorf("exp %v, got %v", actDeleted[0], t1.ID())
+	}
+	actDeleted, actErr = mem.Deleted(time.Now())
+	if actErr != nil {
+		t.Errorf("exp nil, got %v", actErr)
+	}
+	if len(actDeleted) != 0 {
+		t.Errorf("exp 0, got %d", len(actDeleted))
+	}
+
+	t.Log("remove non-existing")
+	if actErr := mem.Delete("test"); !errors.Is(actErr, storage.ErrNotFound) {
+		t.Errorf("exp %v, got %v", storage.ErrNotFound, actErr)
+	}
 }
