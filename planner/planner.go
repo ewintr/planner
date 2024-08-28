@@ -6,9 +6,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type Syncable interface {
-	ID() string
-	Updated() time.Time
+type Syncable struct {
+	ID      string
+	Updated time.Time
+	Deleted bool
+	Item    string
+}
+
+func NewSyncable(item string) Syncable {
+	return Syncable{
+		ID:      uuid.New().String(),
+		Updated: time.Now(),
+		Item:    item,
+	}
 }
 
 type Task struct {

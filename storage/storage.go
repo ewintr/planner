@@ -14,6 +14,4 @@ var (
 type Syncer interface {
 	Update(item planner.Syncable) error
 	Updated(t time.Time) ([]planner.Syncable, error)
-	Delete(id string) error
-	Deleted(t time.Time) ([]string, error)
 }

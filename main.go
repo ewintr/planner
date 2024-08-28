@@ -1,7 +1,11 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"code.ewintr.nl/planner/handler"
 	"code.ewintr.nl/planner/storage"
@@ -9,9 +13,15 @@ import (
 
 func main() {
 	mem := storage.NewMemory()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	http.HandleFunc("/", handler.Index)
-	http.HandleFunc("/sync", handler.NewSyncHandler(mem))
+	go http.ListenAndServe(":8092", handler.NewServer(mem, logger))
 
-	http.ListenAndServe(":8092", nil)
+	logger.Info("service started")
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	<-c
+
+	logger.Info("service stopped")
 }

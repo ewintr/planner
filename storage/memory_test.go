@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -24,7 +23,7 @@ func TestMemoryItem(t *testing.T) {
 	}
 
 	t.Log("add one")
-	t1 := planner.NewTask("test")
+	t1 := planner.NewSyncable("test")
 	if actErr := mem.Update(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -35,14 +34,14 @@ func TestMemoryItem(t *testing.T) {
 	if len(actItems) != 1 {
 		t.Errorf("exp 1, gor %d", len(actItems))
 	}
-	if actItems[0].ID() != t1.ID() {
-		t.Errorf("exp %v, got %v", actItems[0].ID(), t1.ID())
+	if actItems[0].ID != t1.ID {
+		t.Errorf("exp %v, got %v", actItems[0].ID, t1.ID)
 	}
 
 	before := time.Now()
 
 	t.Log("add second")
-	t2 := planner.NewTask("test 2")
+	t2 := planner.NewSyncable("test 2")
 	if actErr := mem.Update(t2); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -53,18 +52,11 @@ func TestMemoryItem(t *testing.T) {
 	if len(actItems) != 2 {
 		t.Errorf("exp 2, gor %d", len(actItems))
 	}
-	if actItems[0].ID() != t1.ID() {
-		t.Errorf("exp %v, got %v", actItems[0].ID(), t1.ID())
+	if actItems[0].ID != t1.ID {
+		t.Errorf("exp %v, got %v", actItems[0].ID, t1.ID)
 	}
-	if actItems[1].ID() != t2.ID() {
-		t.Errorf("exp %v, got %v", actItems[1].ID(), t2.ID())
-	}
-	actDeleted, actErr := mem.Deleted(time.Time{})
-	if actErr != nil {
-		t.Errorf("exp nil, got %v", actErr)
-	}
-	if len(actDeleted) != 0 {
-		t.Errorf("exp 0, got %d", len(actDeleted))
+	if actItems[1].ID != t2.ID {
+		t.Errorf("exp %v, got %v", actItems[1].ID, t2.ID)
 	}
 
 	actItems, actErr = mem.Updated(before)
@@ -74,44 +66,26 @@ func TestMemoryItem(t *testing.T) {
 	if len(actItems) != 1 {
 		t.Errorf("exp 1, gor %d", len(actItems))
 	}
-	if actItems[0].ID() != t2.ID() {
-		t.Errorf("exp %v, got %v", actItems[0].ID(), t2.ID())
+	if actItems[0].ID != t2.ID {
+		t.Errorf("exp %v, got %v", actItems[0].ID, t2.ID)
 	}
 
-	t.Log("remove first")
-	if actErr := mem.Delete(t1.ID()); actErr != nil {
+	t.Log("update first")
+	t1.Updated = time.Now()
+	if actErr := mem.Update(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actItems, actErr = mem.Updated(time.Time{})
+	actItems, actErr = mem.Updated(before)
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	if len(actItems) != 1 {
+	if len(actItems) != 2 {
 		t.Errorf("exp 2, gor %d", len(actItems))
 	}
-	if actItems[0].ID() != t2.ID() {
-		t.Errorf("exp %v, got %v", actItems[0].ID(), t1.ID())
+	if actItems[0].ID != t1.ID {
+		t.Errorf("exp %v, got %v", actItems[0].ID, t1.ID)
 	}
-	actDeleted, actErr = mem.Deleted(time.Time{})
-	if actErr != nil {
-		t.Errorf("exp nil, got %v", actErr)
-	}
-	if len(actDeleted) != 1 {
-		t.Errorf("exp 1, got %d", len(actDeleted))
-	}
-	if actDeleted[0] != t1.ID() {
-		t.Errorf("exp %v, got %v", actDeleted[0], t1.ID())
-	}
-	actDeleted, actErr = mem.Deleted(time.Now())
-	if actErr != nil {
-		t.Errorf("exp nil, got %v", actErr)
-	}
-	if len(actDeleted) != 0 {
-		t.Errorf("exp 0, got %d", len(actDeleted))
-	}
-
-	t.Log("remove non-existing")
-	if actErr := mem.Delete("test"); !errors.Is(actErr, storage.ErrNotFound) {
-		t.Errorf("exp %v, got %v", storage.ErrNotFound, actErr)
+	if actItems[1].ID != t2.ID {
+		t.Errorf("exp %v, got %v", actItems[1].ID, t2.ID)
 	}
 }
