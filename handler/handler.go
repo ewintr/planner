@@ -16,32 +16,40 @@ import (
 
 type Server struct {
 	syncer storage.Syncer
+	apiKey string
 	logger *slog.Logger
 }
 
-func NewServer(syncer storage.Syncer, logger *slog.Logger) *Server {
+func NewServer(syncer storage.Syncer, apiKey string, logger *slog.Logger) *Server {
 	return &Server{
 		syncer: syncer,
+		apiKey: apiKey,
 		logger: logger,
 	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	if r.URL.Path == "/" {
 		Index(w, r)
+		return
+	}
+
+	if r.Header.Get("Authorization") != fmt.Sprintf("Bearer %s", s.apiKey) {
+		http.Error(w, `{"error":"not authorized"}`, http.StatusUnauthorized)
 		return
 	}
 
 	head, tail := ShiftPath(r.URL.Path)
 	switch {
 	case head == "sync" && tail != "/":
-		http.Error(w, "not found", http.StatusNotFound)
+		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 	case head == "sync" && r.Method == http.MethodGet:
 		s.SyncGet(w, r)
 	case head == "sync" && r.Method == http.MethodPost:
 		s.SyncPost(w, r)
 	default:
-		http.Error(w, "not found", http.StatusNotFound)
+		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 	}
 }
 
@@ -58,13 +66,13 @@ func (s *Server) SyncGet(w http.ResponseWriter, r *http.Request) {
 
 	items, err := s.syncer.Updated(timestamp)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmtError(err), http.StatusInternalServerError)
 		return
 	}
 
 	body, err := json.Marshal(items)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmtError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -74,21 +82,21 @@ func (s *Server) SyncGet(w http.ResponseWriter, r *http.Request) {
 func (s *Server) SyncPost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, fmtError(err), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	var items []planner.Syncable
 	if err := json.Unmarshal(body, &items); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, fmtError(err), http.StatusBadRequest)
 		return
 	}
 
 	for _, item := range items {
 		item.Updated = time.Now()
 		if err := s.syncer.Update(item); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, fmtError(err), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -111,4 +119,8 @@ func ShiftPath(p string) (head, tail string) {
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"status":"ok"}`)
+}
+
+func fmtError(err error) string {
+	return fmt.Sprintf(`{"error":%q}`, err.Error())
 }

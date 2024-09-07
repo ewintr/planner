@@ -19,6 +19,40 @@ import (
 	"code.ewintr.nl/planner/storage"
 )
 
+func TestServerServeHTTP(t *testing.T) {
+	t.Parallel()
+
+	apiKey := "test"
+	srv := handler.NewServer(storage.NewMemory(), apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+
+	for _, tc := range []struct {
+		name      string
+		key       string
+		url       string
+		method    string
+		expStatus int
+	}{
+		{
+			name:      "index always visible",
+			url:       "/",
+			method:    http.MethodGet,
+			expStatus: http.StatusOK,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequest(tc.method, tc.url, nil)
+			if err != nil {
+				t.Errorf("exp nil, got %v", err)
+			}
+			res := httptest.NewRecorder()
+			srv.ServeHTTP(res, req)
+			if res.Result().StatusCode != tc.expStatus {
+				t.Errorf("exp %v, got %v", tc.expStatus, res.Result().StatusCode)
+			}
+		})
+	}
+}
+
 func TestSyncGet(t *testing.T) {
 	t.Parallel()
 
@@ -37,7 +71,8 @@ func TestSyncGet(t *testing.T) {
 		}
 	}
 
-	srv := handler.NewServer(mem, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	apiKey := "test"
+	srv := handler.NewServer(mem, apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	for _, tc := range []struct {
 		name      string
@@ -63,6 +98,7 @@ func TestSyncGet(t *testing.T) {
 			if err != nil {
 				t.Errorf("exp nil, got %v", err)
 			}
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
 			res := httptest.NewRecorder()
 			srv.ServeHTTP(res, req)
 
@@ -98,6 +134,7 @@ func TestSyncGet(t *testing.T) {
 func TestSyncPost(t *testing.T) {
 	t.Parallel()
 
+	apiKey := "test"
 	for _, tc := range []struct {
 		name      string
 		reqBody   []byte
@@ -128,11 +165,12 @@ func TestSyncPost(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			mem := storage.NewMemory()
-			srv := handler.NewServer(mem, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+			srv := handler.NewServer(mem, apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 			req, err := http.NewRequest(http.MethodPost, "/sync", bytes.NewBuffer(tc.reqBody))
 			if err != nil {
 				t.Errorf("exp nil, got %v", err)
 			}
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
 			res := httptest.NewRecorder()
 			srv.ServeHTTP(res, req)
 

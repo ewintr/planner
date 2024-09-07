@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"code.ewintr.nl/planner/handler"
@@ -12,10 +14,21 @@ import (
 )
 
 func main() {
+	port, err := strconv.Atoi(os.Getenv("PLANNER_PORT"))
+	if err != nil {
+		fmt.Println("PLANNER_PORT env is not an integer")
+		os.Exit(1)
+	}
+	apiKey := os.Getenv("PLANNER_API_KEY")
+	if apiKey == "" {
+		fmt.Println("PLANNER_API_KEY is empty")
+		os.Exit(1)
+	}
+
 	mem := storage.NewMemory()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	go http.ListenAndServe(":8092", handler.NewServer(mem, logger))
+	go http.ListenAndServe(fmt.Sprintf(":%d", port), handler.NewServer(mem, apiKey, logger))
 
 	logger.Info("service started")
 
