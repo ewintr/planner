@@ -22,10 +22,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	mem := NewMemory()
+	//mem := NewMemory()
+	repo, err := NewSqlite("test.db")
+	if err != nil {
+		fmt.Printf("could not open sqlite db: %s", err.Error())
+		os.Exit(1)
+	}
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	go http.ListenAndServe(fmt.Sprintf(":%d", port), NewServer(mem, apiKey, logger))
+	go http.ListenAndServe(fmt.Sprintf(":%d", port), NewServer(repo, apiKey, logger))
 
 	logger.Info("service started")
 

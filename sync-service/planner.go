@@ -6,8 +6,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type Kind string
+
+const (
+	KindTask Kind = "task"
+)
+
 type Syncable struct {
 	ID      string
+	Kind    Kind
 	Updated time.Time
 	Deleted bool
 	Item    string
