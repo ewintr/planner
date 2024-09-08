@@ -1,4 +1,4 @@
-package handler_test
+package main
 
 import (
 	"bytes"
@@ -13,17 +13,13 @@ import (
 	"sort"
 	"testing"
 	"time"
-
-	"code.ewintr.nl/planner/handler"
-	"code.ewintr.nl/planner/planner"
-	"code.ewintr.nl/planner/storage"
 )
 
 func TestServerServeHTTP(t *testing.T) {
 	t.Parallel()
 
 	apiKey := "test"
-	srv := handler.NewServer(storage.NewMemory(), apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	srv := NewServer(NewMemory(), apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	for _, tc := range []struct {
 		name      string
@@ -57,9 +53,9 @@ func TestSyncGet(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	mem := storage.NewMemory()
+	mem := NewMemory()
 
-	items := []planner.Syncable{
+	items := []Syncable{
 		{ID: "id-0", Updated: now.Add(-10 * time.Minute)},
 		{ID: "id-1", Updated: now.Add(-5 * time.Minute)},
 		{ID: "id-2", Updated: now.Add(time.Minute)},
@@ -72,13 +68,13 @@ func TestSyncGet(t *testing.T) {
 	}
 
 	apiKey := "test"
-	srv := handler.NewServer(mem, apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	srv := NewServer(mem, apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	for _, tc := range []struct {
 		name      string
 		ts        time.Time
 		expStatus int
-		expItems  []planner.Syncable
+		expItems  []Syncable
 	}{
 		{
 			name:      "full",
@@ -89,7 +85,7 @@ func TestSyncGet(t *testing.T) {
 			name:      "normal",
 			ts:        now.Add(-6 * time.Minute),
 			expStatus: http.StatusOK,
-			expItems:  []planner.Syncable{items[1], items[2]},
+			expItems:  []Syncable{items[1], items[2]},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -105,7 +101,7 @@ func TestSyncGet(t *testing.T) {
 			if res.Result().StatusCode != tc.expStatus {
 				t.Errorf("exp %v, got %v", tc.expStatus, res.Result().StatusCode)
 			}
-			var actItems []planner.Syncable
+			var actItems []Syncable
 			actBody, err := io.ReadAll(res.Result().Body)
 			if err != nil {
 				t.Errorf("exp nil, got %v", err)
@@ -139,7 +135,7 @@ func TestSyncPost(t *testing.T) {
 		name      string
 		reqBody   []byte
 		expStatus int
-		expItems  []planner.Syncable
+		expItems  []Syncable
 	}{
 		{
 			name:      "empty",
@@ -157,15 +153,15 @@ func TestSyncPost(t *testing.T) {
   {"ID":"id-2","Updated":"2024-09-06T08:12:00Z","Deleted":false,"Item":""}
 ]`),
 			expStatus: http.StatusNoContent,
-			expItems: []planner.Syncable{
+			expItems: []Syncable{
 				{ID: "id-1", Updated: time.Date(2024, 9, 6, 8, 0, 0, 0, time.UTC)},
 				{ID: "id-2", Updated: time.Date(2024, 9, 6, 12, 0, 0, 0, time.UTC)},
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			mem := storage.NewMemory()
-			srv := handler.NewServer(mem, apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+			mem := NewMemory()
+			srv := NewServer(mem, apiKey, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 			req, err := http.NewRequest(http.MethodPost, "/sync", bytes.NewBuffer(tc.reqBody))
 			if err != nil {
 				t.Errorf("exp nil, got %v", err)
@@ -205,9 +201,9 @@ func TestSyncHandler(t *testing.T) {
 		name      string
 		items     []item
 		method    string
-		body      handler.ChangeSummary
+		body      .ChangeSummary
 		expStatus int
-		expBody   handler.ChangeSummary
+		expBody   .ChangeSummary
 	}{
 		{
 			name:      "empty",
@@ -218,11 +214,11 @@ func TestSyncHandler(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			mem := storage.NewMemory()
+			mem := NewMemory()
 			for _, i := range tc.items {
 				mem.Update(i)
 			}
-			sh := handler.NewSyncHandler(mem)
+			sh := .NewSyncHandler(mem)
 			req, err := http.NewRequest(tc.method, "/sync", nil)
 			if err != nil {
 				t.Errorf("exp nil, got %v", err)

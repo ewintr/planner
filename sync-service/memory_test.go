@@ -1,17 +1,14 @@
-package storage_test
+package main
 
 import (
 	"testing"
 	"time"
-
-	"code.ewintr.nl/planner/planner"
-	"code.ewintr.nl/planner/storage"
 )
 
 func TestMemoryItem(t *testing.T) {
 	t.Parallel()
 
-	mem := storage.NewMemory()
+	mem := NewMemory()
 
 	t.Log("start empty")
 	actItems, actErr := mem.Updated(time.Time{})
@@ -23,7 +20,7 @@ func TestMemoryItem(t *testing.T) {
 	}
 
 	t.Log("add one")
-	t1 := planner.NewSyncable("test")
+	t1 := NewSyncable("test")
 	if actErr := mem.Update(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -41,7 +38,7 @@ func TestMemoryItem(t *testing.T) {
 	before := time.Now()
 
 	t.Log("add second")
-	t2 := planner.NewSyncable("test 2")
+	t2 := NewSyncable("test 2")
 	if actErr := mem.Update(t2); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}

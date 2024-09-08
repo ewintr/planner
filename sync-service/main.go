@@ -8,9 +8,6 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	"code.ewintr.nl/planner/handler"
-	"code.ewintr.nl/planner/storage"
 )
 
 func main() {
@@ -25,10 +22,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	mem := storage.NewMemory()
+	mem := NewMemory()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	go http.ListenAndServe(fmt.Sprintf(":%d", port), handler.NewServer(mem, apiKey, logger))
+	go http.ListenAndServe(fmt.Sprintf(":%d", port), NewServer(mem, apiKey, logger))
 
 	logger.Info("service started")
 

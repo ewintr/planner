@@ -1,4 +1,4 @@
-package handler
+package main
 
 import (
 	"encoding/json"
@@ -9,18 +9,15 @@ import (
 	"path"
 	"strings"
 	"time"
-
-	"code.ewintr.nl/planner/planner"
-	"code.ewintr.nl/planner/storage"
 )
 
 type Server struct {
-	syncer storage.Syncer
+	syncer Syncer
 	apiKey string
 	logger *slog.Logger
 }
 
-func NewServer(syncer storage.Syncer, apiKey string, logger *slog.Logger) *Server {
+func NewServer(syncer Syncer, apiKey string, logger *slog.Logger) *Server {
 	return &Server{
 		syncer: syncer,
 		apiKey: apiKey,
@@ -87,7 +84,7 @@ func (s *Server) SyncPost(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var items []planner.Syncable
+	var items []Syncable
 	if err := json.Unmarshal(body, &items); err != nil {
 		http.Error(w, fmtError(err), http.StatusBadRequest)
 		return
