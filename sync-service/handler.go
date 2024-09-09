@@ -33,7 +33,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("Authorization") != fmt.Sprintf("Bearer %s", s.apiKey) {
-		http.Error(w, `{"error":"not authorized"}`, http.StatusUnauthorized)
+		msg := "not authorized"
+		http.Error(w, fmtError(msg), http.StatusUnauthorized)
+		s.logger.Info(msg)
 		return
 	}
 
@@ -46,7 +48,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case head == "sync" && r.Method == http.MethodPost:
 		s.SyncPost(w, r)
 	default:
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		msg := "not found"
+		http.Error(w, fmtError(msg), http.StatusNotFound)
+		s.logger.Info(msg)
 	}
 }
 
@@ -56,20 +60,26 @@ func (s *Server) SyncGet(w http.ResponseWriter, r *http.Request) {
 	if tsStr != "" {
 		var err error
 		if timestamp, err = time.Parse(time.RFC3339, tsStr); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			msg := err.Error()
+			http.Error(w, fmtError(msg), http.StatusBadRequest)
+			s.logger.Info(msg)
 			return
 		}
 	}
 
 	items, err := s.syncer.Updated(timestamp)
 	if err != nil {
-		http.Error(w, fmtError(err), http.StatusInternalServerError)
+		msg := err.Error()
+		http.Error(w, fmtError(msg), http.StatusInternalServerError)
+		s.logger.Error(msg)
 		return
 	}
 
 	body, err := json.Marshal(items)
 	if err != nil {
-		http.Error(w, fmtError(err), http.StatusInternalServerError)
+		msg := err.Error()
+		http.Error(w, fmtError(msg), http.StatusInternalServerError)
+		s.logger.Error(msg)
 		return
 	}
 
@@ -80,33 +90,45 @@ func (s *Server) SyncGet(w http.ResponseWriter, r *http.Request) {
 func (s *Server) SyncPost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmtError(err), http.StatusBadRequest)
+		msg := err.Error()
+		http.Error(w, fmtError(msg), http.StatusBadRequest)
+		s.logger.Info(msg)
 		return
 	}
 	defer r.Body.Close()
 
 	var items []Item
 	if err := json.Unmarshal(body, &items); err != nil {
-		http.Error(w, fmtError(err), http.StatusBadRequest)
+		msg := err.Error()
+		http.Error(w, fmtError(msg), http.StatusBadRequest)
+		s.logger.Info(msg)
 		return
 	}
 
 	for _, item := range items {
 		if item.ID == "" {
-			http.Error(w, `{"error":"item without an id"}`, http.StatusBadRequest)
+			msg := "item without an id"
+			http.Error(w, fmtError(msg), http.StatusBadRequest)
+			s.logger.Info(msg)
 			return
 		}
 		if item.Kind == "" {
-			http.Error(w, fmt.Sprintf(`{"error":"item %s does not have a kind"}`, item.ID), http.StatusBadRequest)
+			msg := fmt.Sprintf("item %s does not have a kind", item.ID)
+			http.Error(w, fmtError(msg), http.StatusBadRequest)
+			s.logger.Info(msg)
 			return
 		}
 		if item.Body == "" {
-			http.Error(w, fmt.Sprintf(`{"error":"item %s does not have a body"}`, item.ID), http.StatusBadRequest)
+			msg := fmt.Sprintf(`{"error":"item %s does not have a body"}`, item.ID)
+			http.Error(w, msg, http.StatusBadRequest)
+			s.logger.Info(msg)
 			return
 		}
 		item.Updated = time.Now()
 		if err := s.syncer.Update(item); err != nil {
-			http.Error(w, fmtError(err), http.StatusInternalServerError)
+			msg := err.Error()
+			http.Error(w, fmtError(msg), http.StatusInternalServerError)
+			s.logger.Error(msg)
 			return
 		}
 	}
@@ -132,6 +154,6 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"status":"ok"}`)
 }
 
-func fmtError(err error) string {
-	return fmt.Sprintf(`{"error":%q}`, err.Error())
+func fmtError(msg string) string {
+	return fmt.Sprintf(`{"error":%q}`, msg)
 }

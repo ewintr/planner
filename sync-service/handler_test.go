@@ -55,7 +55,7 @@ func TestSyncGet(t *testing.T) {
 	now := time.Now()
 	mem := NewMemory()
 
-	items := []Syncable{
+	items := []Item{
 		{ID: "id-0", Updated: now.Add(-10 * time.Minute)},
 		{ID: "id-1", Updated: now.Add(-5 * time.Minute)},
 		{ID: "id-2", Updated: now.Add(time.Minute)},
@@ -74,7 +74,7 @@ func TestSyncGet(t *testing.T) {
 		name      string
 		ts        time.Time
 		expStatus int
-		expItems  []Syncable
+		expItems  []Item
 	}{
 		{
 			name:      "full",
@@ -85,7 +85,7 @@ func TestSyncGet(t *testing.T) {
 			name:      "normal",
 			ts:        now.Add(-6 * time.Minute),
 			expStatus: http.StatusOK,
-			expItems:  []Syncable{items[1], items[2]},
+			expItems:  []Item{items[1], items[2]},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestSyncGet(t *testing.T) {
 			if res.Result().StatusCode != tc.expStatus {
 				t.Errorf("exp %v, got %v", tc.expStatus, res.Result().StatusCode)
 			}
-			var actItems []Syncable
+			var actItems []Item
 			actBody, err := io.ReadAll(res.Result().Body)
 			if err != nil {
 				t.Errorf("exp nil, got %v", err)
@@ -135,25 +135,32 @@ func TestSyncPost(t *testing.T) {
 		name      string
 		reqBody   []byte
 		expStatus int
-		expItems  []Syncable
+		expItems  []Item
 	}{
 		{
 			name:      "empty",
 			expStatus: http.StatusBadRequest,
 		},
 		{
-			name:      "invalid",
+			name:      "invalid json",
 			reqBody:   []byte(`{"fail}`),
+			expStatus: http.StatusBadRequest,
+		},
+		{
+			name: "invalid item",
+			reqBody: []byte(`[
+  {"id":"id-1","kind":"test","updated":"2024-09-06T08:00:00Z"},
+]`),
 			expStatus: http.StatusBadRequest,
 		},
 		{
 			name: "normal",
 			reqBody: []byte(`[
-  {"ID":"id-1","Updated":"2024-09-06T08:00:00Z","Deleted":false,"Item":""},
-  {"ID":"id-2","Updated":"2024-09-06T08:12:00Z","Deleted":false,"Item":""}
+  {"id":"id-1","kind":"test","updated":"2024-09-06T08:00:00Z","deleted":false,"body":"item"},
+  {"id":"id-2","kind":"test","updated":"2024-09-06T08:12:00Z","deleted":false,"body":"item2"}
 ]`),
 			expStatus: http.StatusNoContent,
-			expItems: []Syncable{
+			expItems: []Item{
 				{ID: "id-1", Updated: time.Date(2024, 9, 6, 8, 0, 0, 0, time.UTC)},
 				{ID: "id-2", Updated: time.Date(2024, 9, 6, 12, 0, 0, 0, time.UTC)},
 			},

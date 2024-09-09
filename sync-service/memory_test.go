@@ -20,7 +20,7 @@ func TestMemoryItem(t *testing.T) {
 	}
 
 	t.Log("add one")
-	t1 := NewSyncable("test")
+	t1 := NewItem("test")
 	if actErr := mem.Update(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -38,7 +38,7 @@ func TestMemoryItem(t *testing.T) {
 	before := time.Now()
 
 	t.Log("add second")
-	t2 := NewSyncable("test 2")
+	t2 := NewItem("test 2")
 	if actErr := mem.Update(t2); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
