@@ -13,11 +13,11 @@ const (
 )
 
 type Syncable struct {
-	ID      string
-	Kind    Kind
-	Updated time.Time
-	Deleted bool
-	Item    string
+	ID      string    `json:"id"`
+	Kind    Kind      `json:"kind"`
+	Updated time.Time `json:"updated"`
+	Deleted bool      `json:"deleted"`
+	Item    string    `json:"item"`
 }
 
 func NewSyncable(item string) Syncable {

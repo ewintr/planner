@@ -14,7 +14,7 @@ const (
 )
 
 var migrations = []string{
-	`CREATE TABLE items ("id" TEXT UNIQUE, "kind" TEXT, "updated" TIMESTAMP, "body" TEXT)`,
+	`CREATE TABLE items ("id" TEXT UNIQUE, "kind" TEXT, "updated" TIMESTAMP, "deleted" INTEGER, "body" TEXT)`,
 	`PRAGMA journal_mode=WAL`,
 	`PRAGMA synchronous=NORMAL`,
 	`PRAGMA cache_size=2000`,
@@ -51,16 +51,17 @@ func NewSqlite(dbPath string) (*Sqlite, error) {
 func (s *Sqlite) Update(item Syncable) error {
 	if _, err := s.db.Exec(`
 INSERT INTO items
-(id, kind, updated, body)
+(id, kind, updated, deleted, body)
 VALUES
-(?, ?, ?, ?)
+(?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE
 SET
 kind=?,
 updated=?,
+deleted=?,
 body=?`,
-		item.ID, item.Kind, item.Updated.Format(timestampFormat), item.Item,
-		item.Kind, item.Updated.Format(timestampFormat), item.Item); err != nil {
+		item.ID, item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Item,
+		item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Item); err != nil {
 		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 	return nil
@@ -68,7 +69,7 @@ body=?`,
 
 func (s *Sqlite) Updated(t time.Time) ([]Syncable, error) {
 	rows, err := s.db.Query(`
-SELECT id, kind, updated, body
+SELECT id, kind, updated, deleted, body
 FROM items
 WHERE updated > ?`, t.Format(timestampFormat))
 	if err != nil {
@@ -79,7 +80,7 @@ WHERE updated > ?`, t.Format(timestampFormat))
 	defer rows.Close()
 	for rows.Next() {
 		var item Syncable
-		if err := rows.Scan(&item.ID, &item.Kind, &item.Updated, &item.Item); err != nil {
+		if err := rows.Scan(&item.ID, &item.Kind, &item.Updated, &item.Deleted, &item.Item); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 		}
 		result = append(result, item)
