@@ -92,6 +92,18 @@ func (s *Server) SyncPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, item := range items {
+		if item.ID == "" {
+			http.Error(w, `{"error":"item without an id"}`, http.StatusBadRequest)
+			return
+		}
+		if item.Kind == "" {
+			http.Error(w, fmt.Sprintf(`{"error":"item %s does not have a kind"}`, item.ID), http.StatusBadRequest)
+			return
+		}
+		if item.Body == "" {
+			http.Error(w, fmt.Sprintf(`{"error":"item %s does not have a body"}`, item.ID), http.StatusBadRequest)
+			return
+		}
 		item.Updated = time.Now()
 		if err := s.syncer.Update(item); err != nil {
 			http.Error(w, fmtError(err), http.StatusInternalServerError)
