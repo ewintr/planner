@@ -11,6 +11,11 @@ import (
 )
 
 func main() {
+	dbPath := os.Getenv("PLANNER_DB_PATH")
+	if dbPath == "" {
+		fmt.Println("PLANNER_DB_PATH is empty")
+		os.Exit(1)
+	}
 	port, err := strconv.Atoi(os.Getenv("PLANNER_PORT"))
 	if err != nil {
 		fmt.Println("PLANNER_PORT env is not an integer")
@@ -23,7 +28,7 @@ func main() {
 	}
 
 	//mem := NewMemory()
-	repo, err := NewSqlite("test.db")
+	repo, err := NewSqlite(dbPath)
 	if err != nil {
 		fmt.Printf("could not open sqlite db: %s", err.Error())
 		os.Exit(1)
