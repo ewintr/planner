@@ -5,23 +5,23 @@ import (
 )
 
 type Memory struct {
-	items map[string]Syncable
+	items map[string]Item
 }
 
 func NewMemory() *Memory {
 	return &Memory{
-		items: make(map[string]Syncable),
+		items: make(map[string]Item),
 	}
 }
 
-func (m *Memory) Update(item Syncable) error {
+func (m *Memory) Update(item Item) error {
 	m.items[item.ID] = item
 
 	return nil
 }
 
-func (m *Memory) Updated(timestamp time.Time) ([]Syncable, error) {
-	result := make([]Syncable, 0)
+func (m *Memory) Updated(timestamp time.Time) ([]Item, error) {
+	result := make([]Item, 0)
 
 	for _, i := range m.items {
 		if timestamp.IsZero() || i.Updated.Equal(timestamp) || i.Updated.After(timestamp) {

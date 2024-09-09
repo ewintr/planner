@@ -10,6 +10,6 @@ var (
 )
 
 type Syncer interface {
-	Update(item Syncable) error
-	Updated(t time.Time) ([]Syncable, error)
+	Update(item Item) error
+	Updated(t time.Time) ([]Item, error)
 }

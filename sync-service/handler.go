@@ -85,7 +85,7 @@ func (s *Server) SyncPost(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var items []Syncable
+	var items []Item
 	if err := json.Unmarshal(body, &items); err != nil {
 		http.Error(w, fmtError(err), http.StatusBadRequest)
 		return

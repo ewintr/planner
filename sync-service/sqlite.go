@@ -48,7 +48,7 @@ func NewSqlite(dbPath string) (*Sqlite, error) {
 	return s, nil
 }
 
-func (s *Sqlite) Update(item Syncable) error {
+func (s *Sqlite) Update(item Item) error {
 	if _, err := s.db.Exec(`
 INSERT INTO items
 (id, kind, updated, deleted, body)
@@ -60,14 +60,14 @@ kind=?,
 updated=?,
 deleted=?,
 body=?`,
-		item.ID, item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Item,
-		item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Item); err != nil {
+		item.ID, item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Body,
+		item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Body); err != nil {
 		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 	return nil
 }
 
-func (s *Sqlite) Updated(t time.Time) ([]Syncable, error) {
+func (s *Sqlite) Updated(t time.Time) ([]Item, error) {
 	rows, err := s.db.Query(`
 SELECT id, kind, updated, deleted, body
 FROM items
@@ -76,11 +76,11 @@ WHERE updated > ?`, t.Format(timestampFormat))
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
-	result := make([]Syncable, 0)
+	result := make([]Item, 0)
 	defer rows.Close()
 	for rows.Next() {
-		var item Syncable
-		if err := rows.Scan(&item.ID, &item.Kind, &item.Updated, &item.Deleted, &item.Item); err != nil {
+		var item Item
+		if err := rows.Scan(&item.ID, &item.Kind, &item.Updated, &item.Deleted, &item.Body); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 		}
 		result = append(result, item)

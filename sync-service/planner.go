@@ -12,19 +12,19 @@ const (
 	KindTask Kind = "task"
 )
 
-type Syncable struct {
+type Item struct {
 	ID      string    `json:"id"`
 	Kind    Kind      `json:"kind"`
 	Updated time.Time `json:"updated"`
 	Deleted bool      `json:"deleted"`
-	Item    string    `json:"item"`
+	Body    string    `json:"body"`
 }
 
-func NewSyncable(item string) Syncable {
-	return Syncable{
+func NewItem(body string) Item {
+	return Item{
 		ID:      uuid.New().String(),
 		Updated: time.Now(),
-		Item:    item,
+		Body:    body,
 	}
 }
 
