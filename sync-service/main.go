@@ -36,6 +36,13 @@ func main() {
 	}
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger.Info("configuration", "configuration", map[string]string{
+		"dbPath":  dbPath,
+		"port":    fmt.Sprintf("%d", port),
+		"apiKey":  "***",
+		"crtPath": crtPath,
+		"keyPath": keyPath,
+	})
 
 	address := fmt.Sprintf(":%d", port)
 	srv := NewServer(repo, apiKey, logger)
