@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -56,12 +57,11 @@ VALUES
 (?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE
 SET
-kind=?,
-updated=?,
-deleted=?,
-body=?`,
-		item.ID, item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Body,
-		item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Body); err != nil {
+kind=excluded.kind,
+updated=excluded.updated,
+deleted=excluded.deleted,
+body=excluded.body`,
+		item.ID, item.Kind, item.Updated.Format(timestampFormat), item.Deleted, item.Body); err != nil {
 		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 	return nil
@@ -80,8 +80,14 @@ WHERE updated > ?`
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 		}
 	} else {
-		query = fmt.Sprintf("%s AND kind in (?)", query)
-		rows, err = s.db.Query(query, t.Format(timestampFormat), ks)
+		args := []any{t.Format(timestampFormat)}
+		ph := make([]string, 0, len(ks))
+		for _, k := range ks {
+			args = append(args, string(k))
+			ph = append(ph, "?")
+		}
+		query = fmt.Sprintf("%s AND kind in (%s)", query, strings.Join(ph, ","))
+		rows, err = s.db.Query(query, args...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 		}
