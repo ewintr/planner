@@ -6,6 +6,6 @@ COPY . ./
 
 RUN go mod download
 
-RUN go build -o planner-sync
+RUN go build -o syncservice
 
-CMD ["./planner-sync"]
+CMD ["./syncservice"]
