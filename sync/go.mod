@@ -1,4 +1,4 @@
-module code.ewintr.nl/planner
+module code.ewintr.nl/planner/sync
 
 go 1.21.5
 
