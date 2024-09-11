@@ -11,7 +11,7 @@ func TestMemoryItem(t *testing.T) {
 	mem := NewMemory()
 
 	t.Log("start empty")
-	actItems, actErr := mem.Updated(time.Time{})
+	actItems, actErr := mem.Updated([]Kind{}, time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -20,11 +20,11 @@ func TestMemoryItem(t *testing.T) {
 	}
 
 	t.Log("add one")
-	t1 := NewItem("test")
+	t1 := NewItem(Kind("kinda"), "test")
 	if actErr := mem.Update(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actItems, actErr = mem.Updated(time.Time{})
+	actItems, actErr = mem.Updated([]Kind{}, time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -38,11 +38,11 @@ func TestMemoryItem(t *testing.T) {
 	before := time.Now()
 
 	t.Log("add second")
-	t2 := NewItem("test 2")
+	t2 := NewItem(Kind("kindb"), "test 2")
 	if actErr := mem.Update(t2); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actItems, actErr = mem.Updated(time.Time{})
+	actItems, actErr = mem.Updated([]Kind{}, time.Time{})
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -56,7 +56,7 @@ func TestMemoryItem(t *testing.T) {
 		t.Errorf("exp %v, got %v", actItems[1].ID, t2.ID)
 	}
 
-	actItems, actErr = mem.Updated(before)
+	actItems, actErr = mem.Updated([]Kind{}, before)
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -72,7 +72,7 @@ func TestMemoryItem(t *testing.T) {
 	if actErr := mem.Update(t1); actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
-	actItems, actErr = mem.Updated(before)
+	actItems, actErr = mem.Updated([]Kind{}, before)
 	if actErr != nil {
 		t.Errorf("exp nil, got %v", actErr)
 	}
@@ -84,5 +84,17 @@ func TestMemoryItem(t *testing.T) {
 	}
 	if actItems[1].ID != t2.ID {
 		t.Errorf("exp %v, got %v", actItems[1].ID, t2.ID)
+	}
+
+	t.Log("select kind")
+	actItems, actErr = mem.Updated([]Kind{"kinda"}, time.Time{})
+	if actErr != nil {
+		t.Errorf("exp nil, got %v", actErr)
+	}
+	if len(actItems) != 1 {
+		t.Errorf("exp 1, got %d", len(actItems))
+	}
+	if actItems[0].ID != t1.ID {
+		t.Errorf("exp %v, got %v", t1.ID, actItems[0].ID)
 	}
 }

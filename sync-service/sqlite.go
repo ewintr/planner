@@ -67,13 +67,24 @@ body=?`,
 	return nil
 }
 
-func (s *Sqlite) Updated(t time.Time) ([]Item, error) {
-	rows, err := s.db.Query(`
+func (s *Sqlite) Updated(ks []Kind, t time.Time) ([]Item, error) {
+	query := `
 SELECT id, kind, updated, deleted, body
 FROM items
-WHERE updated > ?`, t.Format(timestampFormat))
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+WHERE updated > ?`
+	var rows *sql.Rows
+	var err error
+	if len(ks) == 0 {
+		rows, err = s.db.Query(query, t.Format(timestampFormat))
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+		}
+	} else {
+		query = fmt.Sprintf("%s AND kind in (?)", query)
+		rows, err = s.db.Query(query, t.Format(timestampFormat), ks)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+		}
 	}
 
 	result := make([]Item, 0)

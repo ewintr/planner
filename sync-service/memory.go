@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"time"
 )
 
@@ -20,11 +21,13 @@ func (m *Memory) Update(item Item) error {
 	return nil
 }
 
-func (m *Memory) Updated(timestamp time.Time) ([]Item, error) {
+func (m *Memory) Updated(kinds []Kind, timestamp time.Time) ([]Item, error) {
 	result := make([]Item, 0)
 
 	for _, i := range m.items {
-		if timestamp.IsZero() || i.Updated.Equal(timestamp) || i.Updated.After(timestamp) {
+		timeOK := timestamp.IsZero() || i.Updated.Equal(timestamp) || i.Updated.After(timestamp)
+		kindOK := len(kinds) == 0 || slices.Contains(kinds, i.Kind)
+		if timeOK && kindOK {
 			result = append(result, i)
 		}
 	}

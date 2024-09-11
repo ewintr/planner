@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -56,9 +57,9 @@ func TestSyncGet(t *testing.T) {
 	mem := NewMemory()
 
 	items := []Item{
-		{ID: "id-0", Updated: now.Add(-10 * time.Minute)},
-		{ID: "id-1", Updated: now.Add(-5 * time.Minute)},
-		{ID: "id-2", Updated: now.Add(time.Minute)},
+		{ID: "id-0", Kind: KindEvent, Updated: now.Add(-10 * time.Minute)},
+		{ID: "id-1", Kind: KindEvent, Updated: now.Add(-5 * time.Minute)},
+		{ID: "id-2", Kind: KindTask, Updated: now.Add(time.Minute)},
 	}
 
 	for _, item := range items {
@@ -73,6 +74,7 @@ func TestSyncGet(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
 		ts        time.Time
+		ks        []string
 		expStatus int
 		expItems  []Item
 	}{
@@ -82,14 +84,28 @@ func TestSyncGet(t *testing.T) {
 			expItems:  items,
 		},
 		{
-			name:      "normal",
+			name:      "new",
 			ts:        now.Add(-6 * time.Minute),
 			expStatus: http.StatusOK,
 			expItems:  []Item{items[1], items[2]},
 		},
+		{
+			name:      "kind",
+			ks:        []string{string(KindTask)},
+			expStatus: http.StatusOK,
+			expItems:  []Item{items[2]},
+		},
+		{
+			name:      "unknown kind",
+			ks:        []string{"test"},
+			expStatus: http.StatusBadRequest,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			url := fmt.Sprintf("/sync?ts=%s", url.QueryEscape(tc.ts.Format(time.RFC3339)))
+			if len(tc.ks) > 0 {
+				url = fmt.Sprintf("%s&ks=%s", url, strings.Join(tc.ks, ","))
+			}
 			req, err := http.NewRequest(http.MethodGet, url, nil)
 			if err != nil {
 				t.Errorf("exp nil, got %v", err)
@@ -101,6 +117,10 @@ func TestSyncGet(t *testing.T) {
 			if res.Result().StatusCode != tc.expStatus {
 				t.Errorf("exp %v, got %v", tc.expStatus, res.Result().StatusCode)
 			}
+			if tc.expStatus != http.StatusOK {
+				return
+			}
+
 			var actItems []Item
 			actBody, err := io.ReadAll(res.Result().Body)
 			if err != nil {
@@ -149,20 +169,20 @@ func TestSyncPost(t *testing.T) {
 		{
 			name: "invalid item",
 			reqBody: []byte(`[
-  {"id":"id-1","kind":"test","updated":"2024-09-06T08:00:00Z"},
+  {"id":"id-1","kind":"event","updated":"2024-09-06T08:00:00Z"},
 ]`),
 			expStatus: http.StatusBadRequest,
 		},
 		{
 			name: "normal",
 			reqBody: []byte(`[
-  {"id":"id-1","kind":"test","updated":"2024-09-06T08:00:00Z","deleted":false,"body":"item"},
-  {"id":"id-2","kind":"test","updated":"2024-09-06T08:12:00Z","deleted":false,"body":"item2"}
+  {"id":"id-1","kind":"event","updated":"2024-09-06T08:00:00Z","deleted":false,"body":"item"},
+  {"id":"id-2","kind":"event","updated":"2024-09-06T08:12:00Z","deleted":false,"body":"item2"}
 ]`),
 			expStatus: http.StatusNoContent,
 			expItems: []Item{
-				{ID: "id-1", Updated: time.Date(2024, 9, 6, 8, 0, 0, 0, time.UTC)},
-				{ID: "id-2", Updated: time.Date(2024, 9, 6, 12, 0, 0, 0, time.UTC)},
+				{ID: "id-1", Kind: KindEvent, Updated: time.Date(2024, 9, 6, 8, 0, 0, 0, time.UTC)},
+				{ID: "id-2", Kind: KindEvent, Updated: time.Date(2024, 9, 6, 12, 0, 0, 0, time.UTC)},
 			},
 		},
 	} {
@@ -181,7 +201,7 @@ func TestSyncPost(t *testing.T) {
 				t.Errorf("exp %v, got %v", tc.expStatus, res.Result().StatusCode)
 			}
 
-			actItems, err := mem.Updated(time.Time{})
+			actItems, err := mem.Updated([]Kind{}, time.Time{})
 			if err != nil {
 				t.Errorf("exp nil, git %v", err)
 			}

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 	"time"
 )
@@ -66,8 +67,21 @@ func (s *Server) SyncGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	ks := make([]Kind, 0)
+	ksStr := r.URL.Query().Get("ks")
+	if ksStr != "" {
+		for _, k := range strings.Split(ksStr, ",") {
+			if !slices.Contains(KnownKinds, Kind(k)) {
+				msg := fmt.Sprintf("unknown kind: %s", k)
+				http.Error(w, fmtError(msg), http.StatusBadRequest)
+				s.logger.Info(msg)
+				return
+			}
+			ks = append(ks, Kind(k))
+		}
+	}
 
-	items, err := s.syncer.Updated(timestamp)
+	items, err := s.syncer.Updated(ks, timestamp)
 	if err != nil {
 		msg := err.Error()
 		http.Error(w, fmtError(msg), http.StatusInternalServerError)
@@ -114,6 +128,12 @@ func (s *Server) SyncPost(w http.ResponseWriter, r *http.Request) {
 		}
 		if item.Kind == "" {
 			msg := fmt.Sprintf("item %s does not have a kind", item.ID)
+			http.Error(w, fmtError(msg), http.StatusBadRequest)
+			s.logger.Info(msg)
+			return
+		}
+		if !slices.Contains(KnownKinds, item.Kind) {
+			msg := fmt.Sprintf("items %s does not have a know kind", item.ID)
 			http.Error(w, fmtError(msg), http.StatusBadRequest)
 			s.logger.Info(msg)
 			return

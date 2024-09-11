@@ -9,7 +9,12 @@ import (
 type Kind string
 
 const (
-	KindTask Kind = "task"
+	KindTask  Kind = "task"
+	KindEvent Kind = "event"
+)
+
+var (
+	KnownKinds = []Kind{KindTask, KindEvent}
 )
 
 type Item struct {
@@ -20,32 +25,11 @@ type Item struct {
 	Body    string    `json:"body"`
 }
 
-func NewItem(body string) Item {
+func NewItem(k Kind, body string) Item {
 	return Item{
 		ID:      uuid.New().String(),
+		Kind:    k,
 		Updated: time.Now(),
 		Body:    body,
 	}
-}
-
-type Task struct {
-	id          string
-	description string
-	updated     time.Time
-}
-
-func NewTask(description string) Task {
-	return Task{
-		id:          uuid.New().String(),
-		description: description,
-		updated:     time.Now(),
-	}
-}
-
-func (t Task) ID() string {
-	return t.id
-}
-
-func (t Task) Updated() time.Time {
-	return t.updated
 }
