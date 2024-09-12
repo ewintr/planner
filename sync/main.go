@@ -26,8 +26,6 @@ func main() {
 		fmt.Println("PLANNER_API_KEY is empty")
 		os.Exit(1)
 	}
-	crtPath := os.Getenv("PLANNER_CRT_PATH")
-	keyPath := os.Getenv("PLANNER_KEY_PATH")
 
 	repo, err := NewSqlite(dbPath)
 	if err != nil {
@@ -37,20 +35,14 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	logger.Info("configuration", "configuration", map[string]string{
-		"dbPath":  dbPath,
-		"port":    fmt.Sprintf("%d", port),
-		"apiKey":  "***",
-		"crtPath": crtPath,
-		"keyPath": keyPath,
+		"dbPath": dbPath,
+		"port":   fmt.Sprintf("%d", port),
+		"apiKey": "***",
 	})
 
 	address := fmt.Sprintf(":%d", port)
 	srv := NewServer(repo, apiKey, logger)
-	if crtPath != "" || keyPath != "" {
-		go http.ListenAndServeTLS(address, crtPath, keyPath, srv)
-	} else {
-		go http.ListenAndServe(address, srv)
-	}
+	go http.ListenAndServe(address, srv)
 
 	logger.Info("service started")
 
