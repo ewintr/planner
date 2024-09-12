@@ -1,47 +1,63 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
+	"net/url"
+	"strings"
+	"time"
 )
 
 type Client struct {
-	url    string
-	apiKey string
-	c      *http.Client
+	baseURL string
+	apiKey  string
+	c       *http.Client
 }
 
-func NewClient(url, apiKey, certFile string) (*Client, error) {
-	caCert, err := os.ReadFile(certFile)
-	if err != nil {
-		return nil, fmt.Errorf("could not read cert file: %s", err)
-	}
-
-	// Create a certificate pool and add the server's certificate
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	// Create a custom TLS configuration
-	tlsConfig := &tls.Config{
-		RootCAs: caCertPool,
-	}
-
-	// Create a custom transport using the TLS configuration
-	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
-	}
-
-	// Create a client using the custom transport
-	c := &http.Client{
-		Transport: transport,
-	}
-
+func NewClient(url, apiKey string) (*Client, error) {
 	return &Client{
-		url:    url,
-		apiKey: apiKey,
-		c:      c,
+		baseURL: url,
+		apiKey:  apiKey,
+		c: &http.Client{
+			Timeout: 10 * time.Second,
+		},
 	}, nil
+}
+
+func (c *Client) Updates(ks []Kind, ts time.Time) ([]Item, error) {
+	ksStr := make([]string, 0, len(ks))
+	for _, k := range ks {
+		ksStr = append(ksStr, string(k))
+	}
+	u := fmt.Sprintf("%s/sync?ks=", c.baseURL, strings.Join(ksStr, ","))
+	if !ts.IsZero() {
+		u = fmt.Sprintf("%s&ts=", url.QueryEscape(ts.Format(time.RFC3339)))
+	}
+	req, err := http.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not create request: %v", err)
+	}
+
+	res, err := c.c.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("could not get response: %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("server returned status %d", res.StatusCode)
+	}
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read response body: %v", err)
+	}
+
+	var items []Item
+	if err := json.Unmarshal(body, &items); err != nil {
+		return nil, fmt.Errorf("could not unmarshal response body: %v", err)
+	}
+
+	return items, nil
 }
